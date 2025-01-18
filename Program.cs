@@ -12,7 +12,8 @@ foreach (var idx_day in Enumerable.Range(1, 25))
 
         Int64 ret_test = -1;
         Int64 ret_real = -1;
-
+        long t_ms = 0;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         foreach (var idx_type in Enumerable.Range(1, 2))
         {
             var is_real = idx_type == 2;
@@ -39,6 +40,8 @@ foreach (var idx_day in Enumerable.Range(1, 25))
                 }
             }
         }
-        Console.WriteLine($"Day {idx_day} part {idx_part}: {ret_test} / {ret_real}");
+        watch.Stop();
+        t_ms = watch.ElapsedMilliseconds;
+        Console.WriteLine($"Day {idx_day} part {idx_part}: {ret_test} / {ret_real} - {t_ms}ms");
     }
 }

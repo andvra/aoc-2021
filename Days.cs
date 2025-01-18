@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using System.Runtime.InteropServices;
 
 public class Aoc2021
 {
@@ -140,5 +141,81 @@ public class Aoc2021
         }
 
         return ratings[0] * ratings[1];
+    }
+
+    class day4_row
+    {
+        public int idx_board;
+        public int num_found;
+        public List<int> vals = new List<int>();
+    }
+    public static long day4_part1(List<string> lines, bool is_real)
+    {
+        var draws = lines[0].Split(',').Select(x => Int32.Parse(x)).ToList();
+        var boards = lines
+            .Skip(2)
+            .Select((x, index) => new { index, x })
+            .GroupBy(el => el.index / 6, i => i.x)
+            .Select((group, idx) =>
+                group
+                .Take(5)
+                .Select(y => y
+                    .Trim()
+                    .Replace("  ", " ")
+                    .Split(" ")
+                    .Select(z => Int32.Parse(z))
+                    .ToList()
+                    ))
+            .ToList();
+
+        var line_and_cols = new List<day4_row>();
+        var idx_board = 0;
+        foreach (var board in boards)
+        {
+            var rows = board
+                 .Select(x => new day4_row { idx_board = idx_board, num_found = 0, vals = x })
+                 .ToList();
+            line_and_cols.AddRange(rows);
+            foreach (var col in Enumerable.Range(0, 5))
+            {
+                var the_col = board
+                    .Select(x => x[col])
+                    .ToList();
+                line_and_cols.Add(new day4_row { idx_board = idx_board, num_found = 0, vals = the_col });
+            }
+            idx_board++;
+        }
+        var done = false;
+        var ret = 0;
+        foreach (var idx_draw in Enumerable.Range(0,draws.Count()))
+        {
+            var draw = draws[idx_draw];
+            var indices_with_draw = line_and_cols
+                .Select((x, index) => new { x, index })
+                .Where(x => x.x.vals.Contains(draw))
+                .Select(x => x.index);
+            foreach (var idx in indices_with_draw)
+            {
+                line_and_cols[idx].num_found++;
+                if (line_and_cols[idx].num_found == 5)
+                {
+                    var idx_board_winner=line_and_cols [idx].idx_board;
+                    var sum_not_marked = boards[idx_board_winner]
+                        .Select(x =>
+                            x.Select(y => draws.Take(idx_draw + 1).Contains(y) ? 0 : y).ToList())
+                        .ToList()
+                        .Sum(x => x.Sum());
+                    ret = sum_not_marked * draw;
+                    done = true;
+                    break;
+                }
+            }
+            if (done)
+            {
+                break;
+            }
+        }
+
+        return ret;
     }
 }
