@@ -149,7 +149,13 @@ public class Aoc2021
         public int num_found;
         public List<int> vals = new List<int>();
     }
-    public static long day4_part1(List<string> lines, bool is_real)
+    public class day4_finish
+    {
+        public int idx_board;
+        public int score;
+        public int num_steps;
+    }
+    public static List<day4_finish> day4_common(List<string> lines, bool is_real, bool break_on_first)
     {
         var draws = lines[0].Split(',').Select(x => Int32.Parse(x)).ToList();
         var boards = lines
@@ -186,28 +192,32 @@ public class Aoc2021
             idx_board++;
         }
         var done = false;
-        var ret = 0;
-        foreach (var idx_draw in Enumerable.Range(0,draws.Count()))
+        var finishes = new List<day4_finish>();
+
+        foreach (var idx_draw in Enumerable.Range(0, draws.Count()))
         {
             var draw = draws[idx_draw];
             var indices_with_draw = line_and_cols
-                .Select((x, index) => new { x, index })
-                .Where(x => x.x.vals.Contains(draw))
+                .Select((row, index) => new { row, index })
+                .Where(x => x.row.vals.Contains(draw) && (finishes.FirstOrDefault(y => y.idx_board == x.row.idx_board) == null))
                 .Select(x => x.index);
             foreach (var idx in indices_with_draw)
             {
                 line_and_cols[idx].num_found++;
                 if (line_and_cols[idx].num_found == 5)
                 {
-                    var idx_board_winner=line_and_cols [idx].idx_board;
+                    var idx_board_winner = line_and_cols[idx].idx_board;
                     var sum_not_marked = boards[idx_board_winner]
                         .Select(x =>
                             x.Select(y => draws.Take(idx_draw + 1).Contains(y) ? 0 : y).ToList())
                         .ToList()
                         .Sum(x => x.Sum());
-                    ret = sum_not_marked * draw;
-                    done = true;
-                    break;
+                    finishes.Add(new day4_finish() { idx_board = idx_board_winner, num_steps = idx_draw + 1, score = sum_not_marked * draw });
+                    if (break_on_first)
+                    {
+                        done = true;
+                        break;
+                    }
                 }
             }
             if (done)
@@ -216,6 +226,17 @@ public class Aoc2021
             }
         }
 
-        return ret;
+        return finishes;
+    }
+
+    public static long day4_part1(List<string> lines, bool is_real)
+    {
+        return day4_common(lines, is_real, true).Max(x => x.score);
+    }
+
+    public static long day4_part2(List<string> lines, bool is_real)
+    {
+        var score = day4_common(lines, is_real, false).MaxBy(x => x.num_steps)?.score;
+        return score.HasValue ? score.Value : 0;
     }
 }
