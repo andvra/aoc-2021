@@ -239,4 +239,59 @@ public class Aoc2021
         var score = day4_common(lines, is_real, false).MaxBy(x => x.num_steps)?.score;
         return score.HasValue ? score.Value : 0;
     }
+
+    public static long day5_common(List<string> lines, bool is_real, bool include_diag)
+    {
+        var ints = lines
+            .Select(x => x.Split(" -> "))
+            .SelectMany(x => x)
+            .Select(x => x.Split(","))
+            .SelectMany(x => x)
+            .Select(x => int.Parse(x));
+        var coords = ints
+            .Where((val, idx) => idx % 2 == 0)
+            .Zip(ints.Where((val, idx) => idx % 2 == 1))
+            .Select(x => new vec2d(x.First, x.Second));
+        var pairs = coords
+            .Where((val, idx) => idx % 2 == 0)
+            .Zip(coords.Where((val, idx) => idx % 2 == 1))
+            .Select(x => new { pos_start = x.First, pos_end = x.Second })
+            .Where(el => include_diag || ((el.pos_start.x == el.pos_end.x) || (el.pos_start.y == el.pos_end.y)))
+            .ToList();
+        var hashes_first = new HashSet<long>();
+        var hashes_multi = new HashSet<long>();
+        foreach (var pair in pairs)
+        {
+            var cur = pair.pos_start;
+            var end = pair.pos_end;
+            var diff = new vec2d(Math.Sign(end.x - cur.x), Math.Sign(end.y - cur.y));
+            var cur_hash = cur.x + cur.y * 10000;
+            if (hashes_first.Contains(cur_hash))
+            {
+                hashes_multi.Add(cur_hash);
+            }
+            hashes_first.Add(cur_hash);
+            while ((cur.x != end.x) || (cur.y != end.y))
+            {
+                cur += diff;
+                cur_hash = cur.x + cur.y * 10000;
+                if (hashes_first.Contains(cur_hash))
+                {
+                    hashes_multi.Add(cur_hash);
+                }
+                hashes_first.Add(cur_hash);
+            }
+        }
+        return hashes_multi.Count();
+    }
+
+    public static long day5_part1(List<string> lines, bool is_real)
+    {
+        return day5_common(lines, is_real, false);
+    }
+
+    public static long day5_part2(List<string> lines, bool is_real)
+    {
+        return day5_common(lines, is_real, true);
+    }
 }
