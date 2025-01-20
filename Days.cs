@@ -294,4 +294,39 @@ public class Aoc2021
     {
         return day5_common(lines, is_real, true);
     }
+
+    public static long day6_common(List<string> lines, int num_days)
+    {
+        var timers = lines[0]
+            .Split(",")
+            .Select(x => int.Parse(x))
+            .ToList();
+
+        var num_per_day = Enumerable.Range(0, 9).Select(x => new long()).ToArray();
+
+        timers.ForEach(x => num_per_day[x]++);
+
+        foreach (var day in Enumerable.Range(1, num_days))
+        {
+            var num_zero = num_per_day[0];
+            foreach (var pos in Enumerable.Range(0, 8))
+            {
+                num_per_day[pos] = num_per_day[pos + 1];
+            }
+            num_per_day[8] = num_zero;
+            num_per_day[6] += num_zero;
+        }
+
+        return num_per_day.Sum();
+    }
+
+    public static long day6_part1(List<string> lines, bool is_real)
+    {
+        return day6_common(lines, 80);
+    }
+
+    public static long day6_part2(List<string> lines, bool is_real)
+    {
+        return day6_common(lines, 256);
+    }
 }
