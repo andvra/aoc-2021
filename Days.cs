@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
 public class Aoc2021
@@ -341,18 +343,29 @@ public class Aoc2021
     public static long day7_part2(List<string> lines, bool is_real)
     {
         var pos = lines[0].Split(",").Select(x => int.Parse(x)).ToList();
-        long min_val = long.MaxValue;
-        long last_val = long.MaxValue;
-        foreach (var level in Enumerable.Range(pos.Min(), pos.Max() - pos.Min()))
+        var min_vals = new long[2] { long.MaxValue, long.MaxValue };
+        var last_vals = new long[2] { long.MaxValue, long.MaxValue };
+        var done = new bool[2] { false, false };
+        var avg = pos.Sum() / pos.Count();
+        foreach (var level_diff in Enumerable.Range(0, pos.Max()))
         {
-            var val = pos.Select(x => Math.Abs(level - x)).Select(x => (long)(x * ((x + 1) / 2.0f))).Sum();
-            min_val = Math.Min(min_val, val);
-            if (val > last_val)
+            var levels = new long[2] { avg - level_diff, avg + level_diff };
+            var vals = new long[2];
+            for (var idx = 0; idx < 2; idx++)
             {
-                break;
+                if (done[idx])
+                {
+                    continue;
+                }
+                vals[idx] = pos.Select(x => Math.Abs(levels[idx] - x)).Select(x => (long)(x * ((x + 1) / 2.0f))).Sum();
+                min_vals[idx] = Math.Min(min_vals[idx], vals[idx]);
+                if (vals[idx] > last_vals[idx])
+                {
+                    done[idx] = true;
+                }
+                last_vals[idx] = vals[idx];
             }
-            last_val = val;
         }
-        return min_val;
+        return min_vals.Min();
     }
 }
