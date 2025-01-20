@@ -329,4 +329,30 @@ public class Aoc2021
     {
         return day6_common(lines, 256);
     }
+
+    public static long day7_part1(List<string> lines, bool is_real)
+    {
+        var pos = lines[0].Split(",").Select(x => int.Parse(x)).ToList();
+        pos.Sort();
+        var mean = pos[pos.Count / 2];
+        return pos.Select(x => Math.Abs(x - mean)).Sum();
+    }
+
+    public static long day7_part2(List<string> lines, bool is_real)
+    {
+        var pos = lines[0].Split(",").Select(x => int.Parse(x)).ToList();
+        long min_val = long.MaxValue;
+        long last_val = long.MaxValue;
+        foreach (var level in Enumerable.Range(pos.Min(), pos.Max() - pos.Min()))
+        {
+            var val = pos.Select(x => Math.Abs(level - x)).Select(x => (long)(x * ((x + 1) / 2.0f))).Sum();
+            min_val = Math.Min(min_val, val);
+            if (val > last_val)
+            {
+                break;
+            }
+            last_val = val;
+        }
+        return min_val;
+    }
 }
