@@ -368,4 +368,146 @@ public class Aoc2021
         }
         return min_vals.Min();
     }
+
+    public static long day8_part1(List<string> lines, bool is_real)
+    {
+        var wire_pos_per_char = new List<HashSet<int>> {
+            new HashSet<int>{0,1,2,4,5,6 },
+            new HashSet<int>{2,5 },
+            new HashSet<int>{0,2,3,4,6},
+            new HashSet<int>{0,2,3,5,6},
+            new HashSet<int>{1,2,3,5},
+            new HashSet<int>{0,1,3,5,6},
+            new HashSet<int>{0,1,3,4,5,6},
+            new HashSet<int>{0,2,5 },
+            new HashSet<int>{0,1,2,3,4,5,6},
+            new HashSet<int>{0,1,2,3,5,6}
+        };
+        var wires_unique_count = wire_pos_per_char
+            .Where(x => wire_pos_per_char
+                        .Select(y => y.Count)
+                        .Where(y => y == x.Count)
+                        .Count() == 1)
+            .ToList();
+        var unique_counts = wires_unique_count
+            .Select(x => x.Count)
+            .ToList();
+        var ret = 0;
+        foreach (var line in lines)
+        {
+            var parts = line.Split(" | ");
+            var inputs = parts[0]
+                .Split(" ")
+                .Select(x => x.ToCharArray())
+                .Select(x => x.Select(y => (int)(y - 'a')).ToList())
+                .ToList();
+            var outputs = parts[1]
+                .Split(" ")
+                .Select(x => x.ToCharArray())
+                .Select(x => x.Select(y => (int)(y - 'a')).ToList())
+                .ToList();
+            ret += outputs.Where(x => unique_counts.Contains(x.Count)).Count();
+        }
+
+        return ret;
+    }
+
+    public static long day8_part2(List<string> lines, bool is_real)
+    {
+        // Instead of labeling the wires, we give them numberic IDs. 
+        //  Starting with 0 at the top, going down/right.
+        var wire_pos_per_char = new List<HashSet<int>> {
+            new HashSet<int>{0,1,2,4,5,6 },
+            new HashSet<int>{2,5 },
+            new HashSet<int>{0,2,3,4,6},
+            new HashSet<int>{0,2,3,5,6},
+            new HashSet<int>{1,2,3,5},
+            new HashSet<int>{0,1,3,5,6},
+            new HashSet<int>{0,1,3,4,5,6},
+            new HashSet<int>{0,2,5 },
+            new HashSet<int>{0,1,2,3,4,5,6},
+            new HashSet<int>{0,1,2,3,5,6}
+        };
+
+        var ret = 0;
+
+        foreach (var line in lines)
+        {
+            var letter_per_pos = new char[7];
+            var parts = line.Split(" | ");
+            var inputs = parts[0]
+                .Split(" ")
+                .Select(x => x.ToCharArray())
+                .Select(x => x.Select(y => y).ToList())
+                .ToList();
+            var outputs = parts[1]
+                .Split(" ")
+                .Select(x => x.ToCharArray())
+                .Select(x => x.Select(y => y).ToList())
+                .ToList();
+            var cnt_per_char = new List<int> { 0, 0, 0, 0, 0, 0, 0 };
+            foreach (var input in inputs)
+            {
+                foreach (var c in input)
+                {
+                    cnt_per_char[c - 'a']++;
+                }
+            }
+            var input_1 = inputs.First(x => x.Count == 2);
+            var input_4 = inputs.First(x => x.Count == 4);
+            var input_7 = inputs.First(x => x.Count == 3);
+            var input_8 = inputs.First(x => x.Count == 7);
+            letter_per_pos[0] = input_7.Except(input_1).ToList()[0];
+            letter_per_pos[1] = (char)(cnt_per_char
+                .Select((x, index) => new { val = x, index })
+                .Where(x => x.val == 6)
+                .Select(x => x.index)
+                .ToList()[0] + 'a');
+            letter_per_pos[4] = (char)(cnt_per_char
+                .Select((x, index) => new { val = x, index })
+                .Where(x => x.val == 4)
+                .Select(x => x.index)
+                .ToList()[0] + 'a');
+            letter_per_pos[5] = (char)(cnt_per_char
+                .Select((x, index) => new { val = x, index })
+                .Where(x => x.val == 9)
+                .Select(x => x.index)
+                .ToList()[0] + 'a');
+            letter_per_pos[2] = input_1[0] == letter_per_pos[5] ? input_1[1] : input_1[0];
+            var not_pos_3_or_char_4 = new List<char>
+            {
+                letter_per_pos[1],
+                letter_per_pos[2],
+                letter_per_pos[5],
+            };
+            letter_per_pos[3] = input_4.Except(not_pos_3_or_char_4).First();
+            letter_per_pos[6] = Enumerable.Range(0, 7).Select(x => (char)(x + 'a')).Except(letter_per_pos).First();
+            var pos_per_letter = new Dictionary<char, int>();
+
+            for (var pos = 0; pos < letter_per_pos.Count(); pos++)
+            {
+                pos_per_letter[letter_per_pos[pos]] = pos;
+            }
+
+            var nums = new List<int>();
+
+            foreach (var output in outputs)
+            {
+                var set = new HashSet<int>();
+                foreach (var c in output)
+                {
+                    set.Add(pos_per_letter[c]);
+                }
+                var num = wire_pos_per_char
+                    .Select((x, index) => new { val = x, index })
+                    .Where(x => (set.Count == x.val.Count) && (x.val.Except(set).Count() == 0))
+                    .Select(x => x.index)
+                    .First();
+                nums.Add(num);
+            }
+            ret += nums.Aggregate((x, y) => x * 10 + y);
+        }
+
+        return ret;
+    }
 }
