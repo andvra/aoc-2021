@@ -510,4 +510,57 @@ public class Aoc2021
 
         return ret;
     }
+
+    public static long day9_part1(List<string> lines, bool is_real)
+    {
+        var num_rows = lines.Count;
+        var num_cols = lines[0].Length;
+        var heights = new int[num_rows + 2, num_cols + 2];
+        for (var row = 0; row < num_rows + 2; row++)
+        {
+            for (var col = 0; col < num_cols + 2; col++)
+            {
+                heights[row, col] = int.MaxValue;
+            }
+        }
+        for (var row = 0; row < num_rows; row++)
+        {
+            for (var col = 0; col < num_cols; col++)
+            {
+                heights[row + 1, col + 1] = (int)(lines[row][col] - '0');
+            }
+        }
+        var diffs = new[]
+            {
+                new{r=1,c=0},
+                new{r=-1,c=0},
+                new{r=0,c=1},
+                new{r=0,c=-1},
+            };
+        var nums = new List<int>();
+        for (var row = 0; row < num_rows; row++)
+        {
+            for (var col = 0; col < num_cols; col++)
+            {
+                var cur = heights[row + 1, col + 1];
+                var is_smaller = true;
+                foreach (var diff in diffs)
+                {
+                    var row_eval = row + 1 + diff.r;
+                    var col_eval = col + 1 + diff.c;
+                    var eval = heights[row_eval, col_eval];
+                    if (eval <= cur)
+                    {
+                        is_smaller = false;
+                    }
+                }
+                if (is_smaller)
+                {
+                    nums.Add(cur);
+                }
+            }
+        }
+
+        return nums.Select(x => x + 1).Sum();
+    }
 }
