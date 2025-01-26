@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public class Aoc2021
@@ -42,6 +43,119 @@ public class Aoc2021
         public long x;
         public long y;
         public long z;
+    }
+
+    public static bool slice(ref int[,] vals_in, int row_offset, int col_offset, int rows, int cols, ref int[,] vals_out)
+    {
+        var num_rows = vals_in.GetLength(0);
+        var num_cols = vals_in.GetLength(1);
+
+        if (row_offset + rows >= num_rows)
+        {
+            return false;
+        }
+
+        if (col_offset + cols >= num_cols)
+        {
+            return false;
+        }
+
+        vals_out = new int[rows, cols];
+
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < cols; col++)
+            {
+                vals_out[row, col] = vals_in[row + row_offset, col + col_offset];
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Input should be -1 for inaccessible squares and zero for squares to segment
+    /// </summary>
+    /// <param name="vals_in"></param>
+    /// <param name="vals_out"></param>
+    /// <returns></returns>
+    public static bool floodfill(in int[,] vals_in, ref int[,] vals_out, ref List<int> segment_sizes)
+    {
+        var num_rows_orig = vals_in.GetLength(0);
+        var num_cols_orig = vals_in.GetLength(1);
+        var segments_with_border = new int[num_rows_orig + 2, num_cols_orig + 2];
+        var val_inaccessible = -10;
+        var val_unassigned = -1;
+
+        for (var row = 0; row < num_rows_orig + 2; row++)
+        {
+            for (var col = 0; col < num_cols_orig + 2; col++)
+            {
+                var on_edge = (row == 0) || (row == num_rows_orig + 1) || (col == 0) || (col == num_cols_orig + 1);
+                var val = val_inaccessible;
+                if (!on_edge)
+                {
+                    val = vals_in[row - 1, col - 1] == 0 ? val_unassigned : val_inaccessible;
+                }
+                segments_with_border[row, col] = val;
+            }
+        }
+
+        var num_segments = 0;
+
+        for (var row = 1; row < num_rows_orig + 1; row++)
+        {
+            for (var col = 1; col < num_cols_orig + 1; col++)
+            {
+                if (segments_with_border[row, col] != val_unassigned)
+                {
+                    continue;
+                }
+                var diffs = new List<vec2d>
+                {
+                    new vec2d(-1,0),
+                    new vec2d(1,0),
+                    new vec2d(0,-1),
+                    new vec2d(0,1),
+                };
+                segments_with_border[row, col] = num_segments;
+                var heads = new List<vec2d> { new vec2d(col, row) };
+                var idx_start = 0;
+                var idx_end_excl = heads.Count;
+                var segment_size = heads.Count;
+                var done = false;
+                while (!done)
+                {
+                    var num_added = 0;
+                    for (var idx = idx_start; idx < idx_end_excl; idx++)
+                    {
+                        var el = heads[idx];
+                        foreach (var diff in diffs)
+                        {
+                            var row_eval = el.y + diff.y;
+                            var col_eval = el.x + diff.x;
+                            var val = segments_with_border[row_eval, col_eval];
+
+                            if (val == val_unassigned)
+                            {
+                                segments_with_border[row_eval, col_eval] = num_segments;
+                                segment_size++;
+                                heads.Add(new vec2d(col_eval, row_eval));
+                                num_added++;
+                            }
+                        }
+                    }
+                    done = num_added == 0;
+                    idx_start = idx_end_excl;
+                    idx_end_excl = idx_start + num_added;
+                }
+                segment_sizes.Add(segment_size);
+                num_segments++;
+            }
+        }
+
+        vals_out = new int[num_rows_orig, num_cols_orig];
+        return slice(ref segments_with_border, 1, 1, num_rows_orig, num_cols_orig, ref vals_out);
     }
 
     public static long day1_part1(List<string> lines, bool is_real)
@@ -562,5 +676,37 @@ public class Aoc2021
         }
 
         return nums.Select(x => x + 1).Sum();
+    }
+
+    public static long day9_part2(List<string> lines, bool is_real)
+    {
+        var num_rows = lines.Count;
+        var num_cols = lines[0].Length;
+        var heights = new int[num_rows, num_cols];
+
+        for (var row = 0; row < num_rows; row++)
+        {
+            for (var col = 0; col < num_cols; col++)
+            {
+                var val_orig = (int)(lines[row][col] - '0');
+                var val = val_orig == 9 ? -1 : 0;
+                heights[row, col] = val;
+            }
+        }
+
+        var flooded = new int[num_rows, num_cols];
+        var segment_sizes = new List<int>();
+
+        if (!floodfill(in heights, ref flooded, ref segment_sizes))
+        {
+            return -1;
+        }
+
+        var ret = segment_sizes
+            .OrderByDescending(x => x)
+            .Take(3)
+            .Aggregate((x, y) => x * y);
+
+        return ret;
     }
 }
