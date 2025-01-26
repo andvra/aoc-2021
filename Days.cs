@@ -709,4 +709,106 @@ public class Aoc2021
 
         return ret;
     }
+
+    public static long day10_part1(List<string> lines, bool is_real)
+    {
+        var score = 0;
+        var char_to_score = new Dictionary<char, int>
+        {
+            {')',3 },
+            {']',57 },
+            {'}',1197 },
+            {'>',25137 },
+        };
+        var expected_open = new Dictionary<char, char>
+        {
+            {')','(' },
+            {']','[' },
+            {'}','{' },
+            {'>','<' },
+        };
+
+        foreach (var line in lines)
+        {
+            var openers = new Stack<char>();
+            openers.Push(line[0]);
+            for (var idx_char = 1; idx_char < line.Length; idx_char++)
+            {
+                var c = line[idx_char];
+                if (expected_open.ContainsKey(c))
+                {
+                    var last_opener = openers.Pop();
+                    if (last_opener != expected_open[c])
+                    {
+                        score += char_to_score[c];
+                        continue;
+                    }
+                }
+                else
+                {
+                    openers.Push(c);
+                }
+            }
+        }
+
+        return score;
+    }
+
+    public static long day10_part2(List<string> lines, bool is_real)
+    {
+        var scores = new List<long>();
+        var char_to_score = new Dictionary<char, int>
+        {
+            {'(',1 },
+            {'[',2 },
+            {'{',3 },
+            {'<',4 },
+        };
+        var expected_open = new Dictionary<char, char>
+        {
+            {')','(' },
+            {']','[' },
+            {'}','{' },
+            {'>','<' },
+        };
+
+        foreach (var line in lines)
+        {
+            var openers = new Stack<char>();
+            openers.Push(line[0]);
+            var is_valid = true;
+            for (var idx_char = 1; idx_char < line.Length; idx_char++)
+            {
+                var c = line[idx_char];
+                if (expected_open.ContainsKey(c))
+                {
+                    var last_opener = openers.Pop();
+                    if (last_opener != expected_open[c])
+                    {
+                        is_valid = false;
+                        continue;
+                    }
+                }
+                else
+                {
+                    openers.Push(c);
+                }
+            }
+            if (is_valid)
+            {
+                long score_line = 0;
+                var num_items = openers.Count;
+                for (var idx = 0; idx < num_items; idx++)
+                {
+                    var c = openers.Pop();
+                    score_line = 5 * score_line + char_to_score[c];
+                }
+                scores.Add(score_line);
+            }
+        }
+
+        scores.Sort();
+
+        return scores[scores.Count / 2];
+    }
 }
