@@ -811,4 +811,103 @@ public class Aoc2021
 
         return scores[scores.Count / 2];
     }
+
+    public static long day11_common(List<string> lines, bool run_until_all_flash)
+    {
+        var num_rows = lines.Count;
+        var num_cols = lines[0].Length;
+        var num_vals = num_rows * num_cols;
+        var vals = lines
+            .Select(x => x.ToCharArray().Select(c => (int)(c - '0')).ToList())
+            .ToList();
+
+        var num_iter = run_until_all_flash ? 100000 : 100;
+        var num_flashes = 0;
+
+        foreach (var iter in Enumerable.Range(0, num_iter))
+        {
+            var has_exploded = new bool[num_rows, num_cols];
+            var heads = new List<vec2d>();
+            foreach (var row in Enumerable.Range(0, num_rows))
+            {
+                foreach (var col in Enumerable.Range(0, num_cols))
+                {
+                    vals[row][col] += 1;
+                    if (vals[row][col] > 9)
+                    {
+                        heads.Add(new vec2d(col, row));
+                        has_exploded[row, col] = true;
+                    }
+                }
+            }
+            var idx_start = 0;
+            var idx_end_excl = heads.Count;
+            var done = false;
+
+            while (!done)
+            {
+                var num_new = 0;
+                foreach (var idx_head in Enumerable.Range(idx_start, idx_end_excl - idx_start))
+                {
+                    var cur_head = heads[idx_head];
+                    foreach (var row_diff in Enumerable.Range(-1, 3))
+                    {
+                        foreach (var col_diff in Enumerable.Range(-1, 3))
+                        {
+                            var row_eval = (int)cur_head.y + row_diff;
+                            var col_eval = (int)cur_head.x + col_diff;
+                            if (Enumerable.Range(0, num_rows).Contains(row_eval)
+                                && Enumerable.Range(0, num_cols).Contains(col_eval))
+                            {
+                                vals[row_eval][col_eval]++;
+                                if (vals[row_eval][col_eval] > 9)
+                                {
+                                    if (!has_exploded[row_eval, col_eval])
+                                    {
+                                        heads.Add(new vec2d(col_eval, row_eval));
+                                        num_new++;
+                                    }
+                                    has_exploded[row_eval, col_eval] = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (num_new == 0)
+                {
+                    done = true;
+                }
+                idx_start = idx_end_excl;
+                idx_end_excl = idx_start + num_new;
+            }
+            num_flashes += heads.Count;
+            if (run_until_all_flash &&  (num_vals == heads.Count))
+            {
+                return iter + 1;
+            }
+            foreach (var row in Enumerable.Range(0, num_rows))
+            {
+                foreach (var col in Enumerable.Range(0, num_cols))
+                {
+                    if (has_exploded[row, col])
+                    {
+                        vals[row][col] = 0;
+                    }
+                }
+            }
+        }
+
+        return num_flashes;
+    }
+
+    public static long day11_part1(List<string> lines, bool is_real)
+    {
+        return day11_common(lines, false);
+    }
+
+    public static long day11_part2(List<string> lines, bool is_real)
+    {
+        return day11_common(lines, true);
+    }
 }
