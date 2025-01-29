@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Xml;
 
 public class Aoc2021
 {
@@ -1012,5 +1013,112 @@ public class Aoc2021
     {
         var data = day12_get_data(lines);
         return day12_walk(data.connections, data.is_large, data.visited, data.idx_start, data.idx_start, data.idx_start, data.idx_end, false);
+    }
+
+    public static List<vec2d> day13_fold(List<string> lines, int num_max_folds)
+    {
+        var idx_separator = lines
+             .Select((x, index) => new { val = x, index })
+             .Where(x => string.IsNullOrEmpty(x.val))
+             .Select(x => x.index)
+             .First();
+
+        var coords = lines
+            .Take(idx_separator)
+            .Select(x => x.Split(","))
+            .Select(x => new vec2d(int.Parse(x[0]), int.Parse(x[1])))
+            .ToList();
+
+        var folds = lines
+            .Skip(idx_separator + 1)
+            .Select(x => x.Substring("fold along ".Length))
+            .Select(x => x.Split("="))
+            .Select(x => new { axis = x[0], index = int.Parse(x[1]) })
+            .ToList();
+
+        var cnt = 0;
+
+        foreach (var fold in folds)
+        {
+            if (fold.axis == "x")
+            {
+                coords = coords
+                    .Select(v => v.x > fold.index ? new vec2d(2 * fold.index - v.x, v.y) : v)
+                    .ToList();
+            }
+            else
+            {
+                coords = coords
+                    .Select(v => v.y > fold.index ? new vec2d(v.x, 2 * fold.index - v.y) : v)
+                    .ToList();
+            }
+            if (++cnt == num_max_folds)
+            {
+                break;
+            }
+        }
+
+        return coords;
+    }
+
+    public static long day13_part1(List<string> lines, bool is_real)
+    {
+        var coords = day13_fold(lines, 1);
+        var unique = new HashSet<long>();
+
+        foreach (var coord in coords)
+        {
+            unique.Add(coord.x * 100000 + coord.y);
+        }
+
+        return unique.Count;
+    }
+
+    public static long day13_part2(List<string> lines, bool is_real)
+    {
+        var coords = day13_fold(lines, 10000);
+        var unique = new HashSet<long>();
+
+        // NB Set this to true to print the answer. It is non-numeric :/
+        var do_print = false;
+        if (do_print)
+        {
+            foreach (var coord in coords)
+            {
+                unique.Add(coord.x * 100000 + coord.y);
+            }
+
+            var coords_extent = coords
+                .Aggregate((v1, v2) => new vec2d(Math.Max(v1.x, v2.x), Math.Max(v1.y, v2.y)));
+
+            var num_rows = coords_extent.y + 1;
+            var num_cols = coords_extent.x + 1;
+            var dots = new bool[num_rows, num_cols];
+
+            foreach (var v in unique)
+            {
+                var x = v / 100000;
+                var y = v % 100000;
+                dots[(int)y, (int)x] = true;
+            }
+
+            foreach (var row in Enumerable.Range(0, (int)num_rows))
+            {
+                foreach (var col in Enumerable.Range(0, (int)num_cols))
+                {
+                    if (dots[row, col])
+                    {
+                        Console.Write("#");
+                    }
+                    else
+                    {
+                        Console.Write(".");
+                    }
+                }
+                Console.WriteLine();
+            }
+        }
+
+        return 0;
     }
 }
