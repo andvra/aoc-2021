@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.Contracts;
+﻿using System.ComponentModel;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
@@ -882,7 +883,7 @@ public class Aoc2021
                 idx_end_excl = idx_start + num_new;
             }
             num_flashes += heads.Count;
-            if (run_until_all_flash &&  (num_vals == heads.Count))
+            if (run_until_all_flash && (num_vals == heads.Count))
             {
                 return iter + 1;
             }
@@ -909,5 +910,107 @@ public class Aoc2021
     public static long day11_part2(List<string> lines, bool is_real)
     {
         return day11_common(lines, true);
+    }
+
+    public static long day12_walk(in List<List<int>> connections, in List<bool> is_large, bool[] visited, int idx_prev, int idx_cur, int idx_start, int idx_end, bool used_double_access)
+    {
+        var visited_copy = new bool[visited.Length];
+        visited.CopyTo(visited_copy, 0);
+        visited_copy[idx_cur] = true;
+        long num_paths = 0;
+
+        foreach (var idx_eval in connections[idx_cur])
+        {
+            var new_used_double_access = used_double_access;
+            bool node_not_blocked = is_large[idx_eval] || !visited_copy[idx_eval];
+
+            if (!node_not_blocked && !used_double_access && (idx_eval != idx_start))
+            {
+                node_not_blocked = true;
+                new_used_double_access = true;
+            }
+
+            bool is_at_end = idx_eval == idx_end;
+
+            if (is_at_end)
+            {
+                num_paths++;
+            }
+            else if (node_not_blocked)
+            {
+                num_paths += day12_walk(connections, is_large, visited_copy, idx_cur, idx_eval, idx_start, idx_end, new_used_double_access);
+            }
+        }
+
+        return num_paths;
+    }
+
+    public struct Day12_data
+    {
+        public List<List<int>> connections;
+        public List<bool> is_large;
+        public bool[] visited;
+        public int idx_start;
+        public int idx_end;
+    }
+
+    public static Day12_data day12_get_data(List<string> lines)
+    {
+        Day12_data data = new Day12_data();
+
+        var nodes = lines
+             .SelectMany(x => x.Split("-"))
+             .Distinct()
+             .ToList();
+
+        var input_connections = lines
+            .Select(x => x.Split("-").Select(y => nodes.IndexOf(y)).ToList())
+            .ToList();
+
+        data.connections = Enumerable.Range(0, nodes.Count)
+            .Select(x => new List<int>())
+            .ToList();
+
+        input_connections.ForEach(x =>
+        {
+            data.connections[x[0]].Add(x[1]);
+            data.connections[x[1]].Add(x[0]);
+        });
+
+        data.idx_start = nodes
+            .Select((x, index) => new { val = x, index })
+            .Where(x => x.val == "start")
+            .Select(x => x.index)
+            .First();
+
+        data.idx_end = nodes
+            .Select((x, index) => new { val = x, index })
+            .Where(x => x.val == "end")
+            .Select(x => x.index)
+            .First();
+
+        data.is_large = nodes
+            .Select(x => x[0] < 'a')
+            .ToList();
+
+        // visited is whether or not a specific node is visited
+        // used_edge controls whether or not we made a specific
+        //  movement - this is here to avoid loops. Eg. A->B->A->B..
+        //  We are allowed to move A->B->A, but not back to a again
+        data.visited = new bool[nodes.Count];
+
+        return data;
+    }
+
+    public static long day12_part1(List<string> lines, bool is_real)
+    {
+        var data = day12_get_data(lines);
+        return day12_walk(data.connections, data.is_large, data.visited, data.idx_start, data.idx_start, data.idx_start, data.idx_end, true);
+    }
+
+    public static long day12_part2(List<string> lines, bool is_real)
+    {
+        var data = day12_get_data(lines);
+        return day12_walk(data.connections, data.is_large, data.visited, data.idx_start, data.idx_start, data.idx_start, data.idx_end, false);
     }
 }
