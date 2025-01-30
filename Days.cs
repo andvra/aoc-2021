@@ -1,10 +1,12 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Xml;
+using System.Xml.Linq;
 
 public class Aoc2021
 {
@@ -1120,5 +1122,147 @@ public class Aoc2021
         }
 
         return 0;
+    }
+
+    public static long day14_part1(List<string> lines, bool is_real)
+    {
+        var polymer_last = lines[0].ToCharArray();
+        var mapping = lines
+            .Skip(2)
+            .Select(x => x.Split(" -> "))
+            .Select(x => new
+            {
+                pair = x[0].ToCharArray(),
+                res = x[1][0]
+            })
+            .Select(x => new { hash = x.pair[0] * 1000 + x.pair[1], res = x.res })
+            .ToDictionary(x => x.hash, x => x.res);
+        var num_iter = 10;
+
+        foreach (var iter in Enumerable.Range(1, num_iter))
+        {
+            var polymer_cur = new char[polymer_last.Length * 2 - 1];
+            polymer_cur[0] = polymer_last[0];
+            foreach (var idx_last in Enumerable.Range(0, polymer_last.Length - 1))
+            {
+                var hash_eval = polymer_last[idx_last] * 1000 + polymer_last[idx_last + 1];
+                var res = mapping[hash_eval];
+                polymer_cur[idx_last * 2 + 1] = res;
+                polymer_cur[(idx_last + 1) * 2] = polymer_last[idx_last + 1];
+            }
+            polymer_last = polymer_cur;
+        }
+
+        var s = new string(polymer_last);
+        var unique = s.Distinct().ToList();
+        var occurences = unique
+            .Select(x => s.Count(y => y == x))
+            .ToList();
+
+        return occurences.Max() - occurences.Min();
+    }
+
+    public static long day14_part2(List<string> lines, bool is_real)
+    {
+        if (is_real)
+        {
+            return -1;
+        }
+
+        var polymer_last = lines[0].ToCharArray();
+        var mapping = lines
+            .Skip(2)
+            .Select(x => x.Split(" -> "))
+            .Select(x => new
+            {
+                pair = x[0].ToCharArray(),
+                res = x[1][0]
+            })
+            .Select(x => new { hash = x.pair[0] * 1000 + x.pair[1], res = x.res })
+            .ToDictionary(x => x.hash, x => x.res);
+        var num_per_pair = mapping
+            .Select(kv => kv.Key)
+            .ToDictionary(x => x, x => (long)0);
+        var hash_to_hashes = lines
+            .Skip(2)
+            .Select(x => x.Split(" -> "))
+            .Select(x => new
+            {
+                src = x[0].ToCharArray(),
+                dst1 = new char[2] { x[0][0], x[1][0] },
+                dst2 = new char[2] { x[1][0], x[0][1] }
+            })
+            .Select(x => new
+            {
+                hash_src = 1000 * x.src[0] + x.src[1],
+                hash_dst1 = 1000 * x.dst1[0] + x.dst1[1],
+                hash_dst2 = 1000 * x.dst2[0] + x.dst2[1]
+            })
+            .ToList();
+
+        var max_num_iter = 40;
+        var num_iter_before_all_is_set = 0;
+        // This time we instead loop until every pair has been shown atleast once.
+        //  From here, we instead figure out how do counts are updated for each step
+        foreach (var iter in Enumerable.Range(1, max_num_iter))
+        {
+            var polymer_cur = new char[polymer_last.Length * 2 - 1];
+            polymer_cur[0] = polymer_last[0];
+            foreach (var idx_last in Enumerable.Range(0, polymer_last.Length - 1))
+            {
+                var hash_eval = polymer_last[idx_last] * 1000 + polymer_last[idx_last + 1];
+                var res = mapping[hash_eval];
+                num_per_pair[hash_eval]++;
+                polymer_cur[idx_last * 2 + 1] = res;
+                polymer_cur[(idx_last + 1) * 2] = polymer_last[idx_last + 1];
+            }
+            polymer_last = polymer_cur;
+            if (num_per_pair.Count(x => x.Value > 0) == num_per_pair.Count)
+            {
+                num_iter_before_all_is_set = iter;
+                break;
+            }
+        }
+
+        var num_per_pair_last = num_per_pair
+            .ToDictionary(x => x.Key, x => x.Value);
+        // Where we start the range does not matter
+        var idx_start = 0;
+        var num_iter = max_num_iter - num_iter_before_all_is_set - 1;
+        foreach (var iter in Enumerable.Range(idx_start, num_iter))
+        {
+            // Update the count in the dictionary
+            //  Eg. "CH" splits into "B" for our testdata.
+            //  It means we can increase the count for both CB and BH during this iteration
+            var num_per_pair_cur = num_per_pair_last
+                .ToDictionary(x => x.Key, x => (long)0);
+            foreach (var hashes in hash_to_hashes)
+            {
+                num_per_pair_cur[hashes.hash_dst1] += num_per_pair_last[hashes.hash_src];
+                num_per_pair_cur[hashes.hash_dst2] += num_per_pair_last[hashes.hash_src];
+            }
+            num_per_pair_last = num_per_pair_cur
+                .ToDictionary(x => x.Key, x => x.Value);
+        }
+
+        var quanties_per_char = Enumerable.Range(0, 'Z' - 'A')
+            .ToDictionary(x => x, x => (long)0);
+
+        foreach (var kv in num_per_pair_last)
+        {
+            var c1 = kv.Key / 1000;
+            var c2 = kv.Key % 1000;
+            quanties_per_char[c1 - 'A'] += kv.Value;
+            quanties_per_char[c2 - 'A'] += kv.Value;
+        }
+        var min = quanties_per_char.Where(x => x.Value != 0).Min(x => x.Value);
+        var max = quanties_per_char.Max(x => x.Value);
+
+        // TODO: We are roughly there, but something is obviously missing
+        // Min (ref): 3849876073
+        // Min (our): 5500290580
+        // Max (ref): 2192039569602
+        // Max (our): 2120396394087
+        return max - min;
     }
 }
