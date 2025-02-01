@@ -253,9 +253,7 @@ namespace Aoc_common
                 }
                 foreach (var v_eval in to_eval)
                 {
-                    var prio_eval = 0;
-
-                    prio_eval = cur_priority + costs[(int)v_eval.y][(int)v_eval.x];
+                    var prio_eval = cur_priority + costs[(int)v_eval.y][(int)v_eval.x];
 
                     if (least_costs[(int)v_eval.y][(int)v_eval.x] > prio_eval)
                     {

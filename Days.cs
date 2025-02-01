@@ -1113,4 +1113,21 @@ public class Aoc2021
 
         return Functions.a_start(pos_start, pos_end, costs);
     }
+
+    public static long day16_part1(List<string> lines, bool is_real)
+    {
+        if (is_real)
+        {
+            return -1;
+        }
+
+        string binary = String.Join(String.Empty,
+            lines[0]
+            .Select(
+                c => Convert.ToString(Convert.ToInt32(c.ToString(), 16), 2).PadLeft(4, '0')
+            )
+        );
+
+        return 0;
+    }
 }
