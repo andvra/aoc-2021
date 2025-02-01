@@ -1079,4 +1079,38 @@ public class Aoc2021
 
         return Functions.a_start(pos_start, pos_end, costs);
     }
+
+    public static long day15_part2(List<string> lines, bool is_real)
+    {
+        var num_rows_orig = lines.Count;
+        var num_cols_orig = lines[0].Length;
+        var costs_orig = lines
+            .Select(x => x.Select(y => (int)(y - '0')).ToList())
+            .ToList();
+        var num_rows = num_rows_orig * 5;
+        var num_cols = num_cols_orig * 5;
+        var empty_line = Enumerable.Range(0, num_cols).Select(x => 0).ToList();
+        var costs = Enumerable.Repeat(empty_line, num_rows).Select(x => x.Select(y => y).ToList()).ToList();
+        Functions.slice(ref costs_orig, 0, 0, num_rows_orig, num_cols_orig, ref costs);
+
+        foreach (var row in Enumerable.Range(num_rows_orig, num_rows - num_rows_orig))
+        {
+            foreach (var col in Enumerable.Range(0, num_cols_orig))
+            {
+                costs[row][col] = (costs[row - num_rows_orig][col] % 9) + 1;
+            }
+        }
+        foreach (var row in Enumerable.Range(0, num_rows))
+        {
+            foreach (var col in Enumerable.Range(num_cols_orig, num_cols - num_cols_orig))
+            {
+                costs[row][col] = (costs[row][col - num_cols_orig] % 9) + 1;
+            }
+        }
+
+        var pos_start = new vec2d(0, 0);
+        var pos_end = new vec2d(num_cols - 1, num_rows - 1);
+
+        return Functions.a_start(pos_start, pos_end, costs);
+    }
 }

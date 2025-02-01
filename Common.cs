@@ -58,6 +58,16 @@ namespace Aoc_common
     public class Functions
     {
 
+        /// <summary>
+        /// Copies a slice of one vector into another. Always starting at row/col 0/0 in destination vector
+        /// </summary>
+        /// <param name="vals_in"></param>
+        /// <param name="row_offset"></param>
+        /// <param name="col_offset"></param>
+        /// <param name="rows"></param>
+        /// <param name="cols"></param>
+        /// <param name="vals_out"></param>
+        /// <returns></returns>
         public static bool slice(ref int[,] vals_in, int row_offset, int col_offset, int rows, int cols, ref int[,] vals_out)
         {
             var num_rows = vals_in.GetLength(0);
@@ -80,6 +90,32 @@ namespace Aoc_common
                 for (int col = 0; col < cols; col++)
                 {
                     vals_out[row, col] = vals_in[row + row_offset, col + col_offset];
+                }
+            }
+
+            return true;
+        }
+
+        public static bool slice(ref List<List<int>> vals_in, int row_offset, int col_offset, int rows, int cols, ref List<List<int>> vals_out)
+        {
+            var num_rows = vals_in.Count;
+            var num_cols = vals_in[0].Count;
+
+            if (row_offset + rows > num_rows)
+            {
+                return false;
+            }
+
+            if (col_offset + cols > num_cols)
+            {
+                return false;
+            }
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    vals_out[row][col] = vals_in[row + row_offset][col + col_offset];
                 }
             }
 
@@ -180,7 +216,7 @@ namespace Aoc_common
                 .ToList();
             var queue = new PriorityQueue<vec2d, int>();
             queue.Enqueue(pos_start, 0);
-            var max_iter = 100000;
+            var max_iter = 10000000;
             var pos_cur = new vec2d();
             var cur_priority = 0;
 
