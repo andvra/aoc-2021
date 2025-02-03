@@ -1114,20 +1114,164 @@ public class Aoc2021
         return Functions.a_start(pos_start, pos_end, costs);
     }
 
-    public static long day16_part1(List<string> lines, bool is_real)
+    public class Day16_package
     {
-        if (is_real)
+        int version;
+        int type;
+        long num;
+        int length_type;
+        List<Day16_package> packages = new List<Day16_package>();
+
+        public Day16_package()
         {
-            return -1;
         }
 
-        string binary = String.Join(String.Empty,
+        static int bin2int(string bin)
+        {
+            return Convert.ToInt32(bin, 2);
+        }
+
+        static int read_next(in string binary, ref int idx_cur, int num_bits)
+        {
+            var ret = bin2int(binary.Substring(idx_cur, num_bits));
+            idx_cur += num_bits;
+            return ret;
+        }
+
+        //static string read_next_bin_string(in string binary, ref int idx_cur, int num_bits)
+        //{
+        //    var ret = binary.Substring(idx_cur, num_bits);
+        //    idx_cur += num_bits;
+        //    return ret;
+        //}
+
+        /// <summary>
+        /// Return number of characters from the binary string actually used
+        /// </summary>
+        /// <returns></returns>
+        public static Day16_package parse(in string binary, ref int idx_cur)
+        {
+            Day16_package package = new Day16_package();
+            var type_id_literal = 4;
+
+            package.version = read_next(binary, ref idx_cur, 3);
+            package.type = read_next(binary, ref idx_cur, 3);
+
+            if (package.type == type_id_literal)
+            {
+                var done = false;
+                package.num = 0;
+                while (!done)
+                {
+                    var cur_read = read_next(binary, ref idx_cur, 5);
+                    var cur_num = cur_read & 0b1111;
+                    package.num = (package.num << 4) + cur_num;
+                    if ((cur_read & 0b10000) == 0)
+                    {
+                        done = true;
+                    }
+                }
+            }
+            else
+            {
+                package.length_type = read_next(binary, ref idx_cur, 1);
+
+                if (package.length_type == 0)
+                {
+                    var total_packages_length = read_next(binary, ref idx_cur, 15);
+                    var idx_cur_start = idx_cur;
+
+                    while (idx_cur - idx_cur_start < total_packages_length)
+                    {
+                        var subpackage = Day16_package.parse(binary, ref idx_cur);
+                        package.packages.Add(subpackage);
+                    }
+                }
+
+                if (package.length_type == 1)
+                {
+                    var num_following_packages = read_next(binary, ref idx_cur, 11);
+                    foreach (var idx in Enumerable.Range(0, num_following_packages))
+                    {
+                        var subpackage = Day16_package.parse(binary, ref idx_cur);
+                        package.packages.Add(subpackage);
+                    }
+                }
+            }
+
+            return package;
+        }
+
+        public static int sum_version(in Day16_package package)
+        {
+            var ret = package.version;
+
+            foreach (var sub in package.packages)
+            {
+                ret += sum_version(in sub);
+            }
+
+            return ret;
+        }
+
+        public static long value_of(in Day16_package package)
+        {
+            if (package.type == 4)
+            {
+                return package.num;
+            }
+
+            var val_subpackages = new List<long>();
+
+            foreach (var sub in package.packages)
+            {
+                val_subpackages.Add(value_of(sub));
+            }
+
+            switch (package.type)
+            {
+                case 0: return val_subpackages.Sum();
+                case 1: return val_subpackages.Aggregate(1L, (a, b) => a * b);
+                case 2: return val_subpackages.Min();
+                case 3: return val_subpackages.Max();
+                case 5: return val_subpackages[0] > val_subpackages[1] ? 1 : 0;
+                case 6: return val_subpackages[0] < val_subpackages[1] ? 1 : 0;
+                case 7: return val_subpackages[0] == val_subpackages[1] ? 1 : 0;
+            }
+
+            return 0;
+        }
+    }
+
+    public static long day16_part1(List<string> lines, bool is_real)
+    {
+        var binary = String.Join(String.Empty,
             lines[0]
             .Select(
                 c => Convert.ToString(Convert.ToInt32(c.ToString(), 16), 2).PadLeft(4, '0')
             )
         );
 
-        return 0;
+        int idx_cur = 0;
+        var package = Day16_package.parse(binary, ref idx_cur);
+        var version_sum = Day16_package.sum_version(package);
+
+        return version_sum;
+    }
+
+    public static long day16_part2(List<string> lines, bool is_real)
+    {
+        var binary = String.Join(String.Empty,
+            lines[0]
+            .Select(
+                c => Convert.ToString(Convert.ToInt32(c.ToString(), 16), 2).PadLeft(4, '0')
+            )
+        );
+
+        int idx_cur = 0;
+        var package = Day16_package.parse(binary, ref idx_cur);
+        var val = Day16_package.value_of(package);
+
+        return val;
     }
 }
