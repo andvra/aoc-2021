@@ -207,7 +207,7 @@ namespace Aoc_common
             return slice(ref segments_with_border, 1, 1, num_rows_orig, num_cols_orig, ref vals_out);
         }
 
-        public static long a_start(vec2d pos_start, vec2d pos_end, List<List<int>> costs)
+        public static long a_star(vec2d pos_start, vec2d pos_end, List<List<int>> costs)
         {
             var num_rows = costs.Count;
             var num_cols = costs[0].Count;
@@ -264,6 +264,33 @@ namespace Aoc_common
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="a">Coefficient of quadratic component</param>
+        /// <param name="b">Coefficient of linear component </param>
+        /// <param name="c">Constant coefficient</param>
+        public static bool solve_quadratic(double a, double b, double c, out double[] roots)
+        {
+            roots = new double[2];
+            var under_root = b * b - 4 * a * c;
+
+            if(under_root < 0)
+            {
+                return false;
+            }
+
+            if (a == 0)
+            {
+                return false;
+            }
+
+            roots[0] = (-b + Math.Sqrt(under_root)) / (2 * a);
+            roots[1] = (-b - Math.Sqrt(under_root)) / (2 * a);
+
+            return true;
         }
     }
 }

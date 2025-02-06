@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Data;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection.Emit;
@@ -1077,7 +1078,7 @@ public class Aoc2021
         var pos_start = new vec2d(0, 0);
         var pos_end = new vec2d(num_cols - 1, num_rows - 1);
 
-        return Functions.a_start(pos_start, pos_end, costs);
+        return Functions.a_star(pos_start, pos_end, costs);
     }
 
     public static long day15_part2(List<string> lines, bool is_real)
@@ -1111,7 +1112,7 @@ public class Aoc2021
         var pos_start = new vec2d(0, 0);
         var pos_end = new vec2d(num_cols - 1, num_rows - 1);
 
-        return Functions.a_start(pos_start, pos_end, costs);
+        return Functions.a_star(pos_start, pos_end, costs);
     }
 
     public class Day16_package
@@ -1273,5 +1274,115 @@ public class Aoc2021
         var val = Day16_package.value_of(package);
 
         return val;
+    }
+
+    public static long day17_get_combos(List<string> lines, out Dictionary<int, HashSet<int>> num_steps_x, out Dictionary<int, HashSet<int>> num_steps_y)
+    {
+        var xy = lines[0].Substring("target area: x=".Length).Split(", y=");
+        var xs = xy[0].Split("..");
+        var ys = xy[1].Split("..");
+        var x_range = xs.Select(x => int.Parse(x)).ToList();
+        var y_range = ys.Select(x => int.Parse(x)).ToList();
+        var xmin = x_range.Min();
+        var xmax = x_range.Max();
+        var ymin = y_range.Min();
+        var ymax = y_range.Max();
+        var xmax_abs = x_range.Select(x => Math.Abs(x)).Max();
+        var ymax_abs = y_range.Select(x => Math.Abs(x)).Max();
+        double[] roots;
+        num_steps_y = new Dictionary<int, HashSet<int>>();
+
+        foreach (var y_eval in Enumerable.Range(-ymax_abs, 2 * ymax_abs + 1))
+        {
+            // y-position at step k is kn - (k-1)(k-1+1)/2 ==> k(n+1/2)-k^2/2 ==> 1/2 * (k(2n+1)-k^2)
+            // We should check if there is an answer between y_min and y_max for any k
+            // We do that by setting constant 'c' to each of the y_min/y_max
+            // Remember to multiply y_min/y_max with two, since we have that factor in the equation above
+            var cur_roots = new List<double>();
+            foreach (var cur_y_lim in new List<int> { ymin, ymax })
+            {
+                var a = -1;
+                var b = 2 * y_eval + 1;
+                var c = -2 * cur_y_lim;
+                a = -a;
+                b = -b;
+                c = -c;
+                var ok = Functions.solve_quadratic(a, b, c, out roots);
+                if (ok)
+                {
+                    cur_roots.Add(roots[0]);
+                }
+            }
+
+            var truncated = cur_roots.Select(x => Math.Truncate(x)).ToList();
+            var different_sides_of_an_integer = truncated.Distinct().Count() == 2;
+            var atleast_one_root_is_integer = cur_roots.Where(x => (int)x == x).Count() > 0;
+
+            if (different_sides_of_an_integer || atleast_one_root_is_integer)
+            {
+                var idx_first = (int)Math.Ceiling(cur_roots.Min());
+                var idx_last = (int)Math.Floor(cur_roots.Max());
+                foreach (var idx in Enumerable.Range(idx_first, idx_last - idx_first + 1))
+                {
+                    if (!num_steps_y.ContainsKey(idx))
+                    {
+                        num_steps_y[idx] = new HashSet<int>();
+                    }
+                    num_steps_y[idx].Add(y_eval);
+                }
+            }
+        }
+
+        var steps_to_check = num_steps_y.Keys.ToList();
+        num_steps_x = new Dictionary<int, HashSet<int>>();
+
+        foreach (var x_eval in Enumerable.Range(0, 2 * xmax_abs + 1))
+        {
+            foreach (var cur_step in steps_to_check)
+            {
+                var x_remove = x_eval - cur_step;
+                x_remove = Math.Max(x_remove, 0);
+                var pos = (x_eval * (x_eval + 1)) / 2 - (x_remove * (x_remove + 1)) / 2;
+                if (pos >= xmin && pos <= xmax)
+                {
+                    if (!num_steps_x.ContainsKey(cur_step))
+                    {
+                        num_steps_x[cur_step] = new HashSet<int>();
+                    }
+                    num_steps_x[cur_step].Add(x_eval);
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    public static long day17_part1(List<string> lines, bool is_real)
+    {
+        day17_get_combos(lines, out var num_steps_x, out var num_steps_y);
+        var max_v = num_steps_y.Select(x => x.Value.Max()).Max();
+        return (max_v * (max_v + 1)) / 2;
+    }
+
+    public static long day17_part2(List<string> lines, bool is_real)
+    {
+        day17_get_combos(lines, out var num_steps_x, out var num_steps_y);
+
+        var combos = new HashSet<int>();
+        foreach (var el in num_steps_x)
+        {
+            if (num_steps_y.ContainsKey(el.Key))
+            {
+                foreach (var x in num_steps_x[el.Key])
+                {
+                    foreach (var y in num_steps_y[el.Key])
+                    {
+                        combos.Add(x * 10000 + y);
+                    }
+                }
+            }
+        }
+
+        return combos.Count;
     }
 }
