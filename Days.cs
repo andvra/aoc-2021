@@ -1385,4 +1385,167 @@ public class Aoc2021
 
         return combos.Count;
     }
+
+    public static long day18_part1(List<string> lines, bool is_real)
+    {
+        var code_close = -1;
+        var code_open = -2;
+        var code_comma = -3;
+
+        string to_string(List<int> vals)
+        {
+            var cc = vals
+                .Select(x => x >= 0 ? x + '0' : x)
+                .Select(x => x == code_close ? ']' : x)
+                .Select(x => x == code_open ? '[' : x)
+                .Select(x => x == code_comma ? ',' : x)
+                .Select(x => (char)x)
+                .ToArray();
+            var s = new string(cc);
+
+            return s;
+        }
+
+        List<int> line_to_numbers(string line)
+        {
+            var vals = line.Select(c => (int)c).ToList();
+            vals = vals.Select(x => x == ']' ? code_close : x).ToList();
+            vals = vals.Select(x => x == '[' ? code_open : x).ToList();
+            vals = vals.Select(x => x == ',' ? code_comma : x).ToList();
+            vals = vals.Select(x => x > 0 ? x - '0' : x).ToList();
+
+            return vals;
+        }
+
+        string reduce_line(string line)
+        {
+            var vals = line_to_numbers(line);
+            var keep_looking = true;
+
+            while (keep_looking)
+            {
+                keep_looking = false;
+                var idx_level = -1;
+                var idx_num = 0;
+                var nums = new int[2];
+                var idx_first_large_number = -1;
+                var idx_explode = -1;
+
+                foreach (var idx in Enumerable.Range(0, vals.Count))
+                {
+                    var val = vals[idx];
+
+                    if (val == code_open)
+                    {
+                        idx_num = 0;
+                        idx_level++;
+                    }
+                    else if (val == code_close)
+                    {
+                        idx_num = 0;
+                        idx_level--;
+                    }
+                    else if (val == code_comma)
+                    {
+                        // Do nothing
+                    }
+                    else
+                    {
+                        if (idx_first_large_number == -1 && val >= 10)
+                        {
+                            idx_first_large_number = idx;
+                        }
+                        nums[idx_num++] = val;
+                        if (idx_num == 2)
+                        {
+                            if (idx_level > 3)
+                            {
+                                idx_explode = idx;
+                            }
+                        }
+                    }
+                    if (idx_explode > -1)
+                    {
+                        break;
+                    }
+                }
+
+                if (idx_explode > -1)
+                {
+                    var idx_bracket_start = idx_explode - 3;
+                    var idx_bracket_end = idx_explode + 1;
+                    var val_left = vals.Select((x, index) => new { val = x, index }).Take(idx_bracket_start).LastOrDefault(x => x.val >= 0);
+                    var val_right = vals.Select((x, index) => new { val = x, index }).Skip(idx_bracket_end).FirstOrDefault(x => x.val >= 0);
+
+                    if (val_left != null)
+                    {
+                        vals[val_left.index] += nums[0];
+                    }
+
+                    if (val_right != null)
+                    {
+                        vals[val_right.index] += nums[1];
+                    }
+
+                    foreach (var idx_to_remove in Enumerable.Range(idx_bracket_start, idx_bracket_end - idx_bracket_start + 1).Reverse())
+                    {
+                        vals.RemoveAt(idx_to_remove);
+                    }
+
+                    vals.Insert(idx_bracket_start, 0);
+                }
+                else if (idx_first_large_number > -1)
+                {
+                    var val_left = vals[idx_first_large_number] / 2;
+                    var val_right = vals[idx_first_large_number] / 2 + vals[idx_first_large_number] % 2;
+                    vals[idx_first_large_number] = code_close;
+                    vals.Insert(idx_first_large_number, val_right);
+                    vals.Insert(idx_first_large_number, code_comma);
+                    vals.Insert(idx_first_large_number, val_left);
+                    vals.Insert(idx_first_large_number, code_open);
+                }
+
+                if (idx_explode > -1 || idx_first_large_number > -1)
+                {
+                    keep_looking = true;
+                }
+            }
+
+            return to_string(vals);
+        }
+
+        string merge_lines(string line1, string line2)
+        {
+            return "[" + line1 + "," + line2 + "]";
+        }
+
+        var reduced = reduce_line(merge_lines(lines[0], lines[1]));
+
+        foreach (var line in lines.Skip(2))
+        {
+            reduced = reduce_line(merge_lines(reduced, line));
+        }
+
+        var done = false;
+        var as_numbers = line_to_numbers(reduced);
+
+        while (!done)
+        {
+            var idx_last_open = as_numbers.LastIndexOf(code_open);
+
+            if (idx_last_open > -1)
+            {
+                var val1 = as_numbers[idx_last_open + 1];
+                var val2 = as_numbers[idx_last_open + 3];
+                as_numbers = as_numbers.Select((x, index) => new { val = x, index }).Where(x => x.index < idx_last_open || x.index > idx_last_open + 4).Select(x => x.val).ToList();
+                as_numbers.Insert(idx_last_open, 3 * val1 + 2 * val2);
+            }
+            else
+            {
+                done = true;
+            }
+        }
+
+        return as_numbers[0];
+    }
 }
