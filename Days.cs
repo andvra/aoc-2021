@@ -1562,9 +1562,9 @@ public class Aoc2021
         var code_open = -2;
         var all_reduced = new List<string>();
 
-        for(var idx_start = 0; idx_start < lines.Count - 1; idx_start++)
+        for (var idx_start = 0; idx_start < lines.Count - 1; idx_start++)
         {
-            for(var idx_end=idx_start+1;idx_end<lines.Count; idx_end++)
+            for (var idx_end = idx_start + 1; idx_end < lines.Count; idx_end++)
             {
                 all_reduced.Add(day18_reduce_line(day18_merge_lines(lines[idx_start], lines[idx_end])));
                 all_reduced.Add(day18_reduce_line(day18_merge_lines(lines[idx_end], lines[idx_start])));
@@ -1573,7 +1573,7 @@ public class Aoc2021
 
         var best_score = 0;
 
-        foreach(var reduced in all_reduced)
+        foreach (var reduced in all_reduced)
         {
             var done = false;
             var as_numbers = day18_line_to_numbers(reduced);
@@ -1598,5 +1598,38 @@ public class Aoc2021
         }
 
         return best_score;
+    }
+
+    public static long day19_part1(List<string> lines, bool is_real)
+    {
+        if (is_real)
+        {
+            return -1;
+        }
+
+        var scans = new List<List<vec3d>>();
+        scans.Add(new List<vec3d>());
+        int idx_scanner = 0;
+
+        foreach (var line in lines.Skip(1))
+        {
+            if (line.Length == 0)
+            {
+                continue;
+            }
+            if (line.Substring(0, 2) == "--")
+            {
+                idx_scanner++;
+                scans.Add(new List<vec3d>());
+            }
+            else
+            {
+                var coords = line.Split(',').Select(x => int.Parse(x)).ToList();
+                var v = new vec3d(coords[0], coords[1], coords[2]);
+                scans[idx_scanner].Add(v);
+            }
+        }
+
+        return 0;
     }
 }
